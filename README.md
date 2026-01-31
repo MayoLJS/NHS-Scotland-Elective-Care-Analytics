@@ -30,41 +30,34 @@ The raw dataset contained legacy identifiers that would have fragmented the repo
 
 ---
 
-## 📈 Analytical Framework
-I designed KPI queries around **System Pressure**, moving beyond raw counts to calculate the **Breach Density Metric**:
+## 📈 Advanced Analytical Framework
+I transitioned from basic descriptive counts to **Diagnostic KPIs** to better understand the "Experience of Delay" and operational risk.
 
-$$Breach\ Density = \left( \frac{Waits\ Over\ 52\ Weeks}{Total\ Waits} \right) \times 100$$
-
-### Regional Pressure Findings
-| Health Board | Raw Volume | Breach Density | Status |
-| :--- | :--- | :--- | :--- |
-| **NHS Tayside** | 1,072,264 | 9.19% | High Load / Controlled |
-| **NHS Lothian** | 617,831 | 17.06% | **High Systemic Pressure** |
-| **NHS Grampian** | 668,522 | 16.97% | **High Systemic Pressure** |
+### 1. Breach Density (Identifying Systemic Risk)
+By isolating "Ongoing" waitlists, I calculated the percentage of the list exceeding the 52-week mark. This revealed that while volume is high in cities, **NHS Grampian (18.2%)** and **NHS Lothian (17.85%)** face the highest proportional pressure.
 
 
 
-### Clinical Outliers (90th Percentile "Gravity")
-The 90th percentile signals severe bottlenecks for the most delayed 10% of patients:
-* **ENT (Greater Glasgow & Clyde)**: 983 days (2.7 years).
-* **Rheumatology (Fife)**: 930 days.
-* **Dermatology (Grampian)**: 874 days.
-* **National Urology Average**: 497.9 days (Critical failure of the 12-week Guarantee).
+### 2. The Inequality Ratio (Median vs. 90th Percentile)
+I engineered an **Inequality Ratio** ($90^{th}\ Pctl\ /\ Median$) to identify specialties where the "long-tail" of patients is stagnant compared to the average.
+* **Plastic Surgery (3.3x)** and **Haematology (3.2x)** exhibit the highest inequality, signaling that complex cases are being disproportionately delayed compared to routine triage.
+
+
 
 ---
 
-## ⏱ Time-Series Trend (Nov 2023 – Nov 2025)
-Longitudinal tracking identified a clear "Crisis and Recovery" arc:
-* **Crisis Peak**: May 2025 reached a record 203,655 long-term breaches.
-* **Inflection Point**: June 2025 marked the beginning of a sustained downward trend.
-* **Recovery Status**: By Nov 2025, breaches fell to 140,415—a **31% reduction** in six months.
+## ⏱ Recovery Velocity: Time-Series Analysis
+Using SQL Window Functions (`LAG`), I quantified the **Month-over-Month (MoM) Recovery Velocity** of the national backlog.
+
+* **Crisis Peak**: May 2025 reached a record 203,655 breaches.
+* **Accelerating Momentum**: Recovery efficiency peaked in November 2025 with a **9.87% MoM reduction**, proving that the velocity of clearing the backlog is increasing significantly as recovery plans mature.
 
 
 
 ---
 
 ## 🚩 Data Quality Flag: Operational Latency
-The analysis exposed that the largest breach group was **"Not Specified / Other"** (e.g., 18,831 in Glasgow). This highlights **Administrative Latency**: patients sit in a "Data Limbo" during triage, meaning real specialty wait times may be higher than reported once backlogs are processed.
+The analysis exposed that the largest breach group was **"Not Specified / Other"** (e.g., 18,831 in Glasgow). This highlights **Administrative Latency**: patients sitting in "Data Limbo" during triage, which likely masks higher true wait times in specific surgical specialties once processed.
 
 ## 🏁 Conclusion
-This project converted raw public health data into a high-fidelity analytical model. It exposed that **volume does not equal risk** and that while national recovery is measurable (31% improvement), specific specialties like ENT and Dermatology remain in critical failure.
+The improved analysis proves that **volume does not equal risk**. While the national recovery is accelerating (31% total reduction), the high **Inequality Ratios** in specialties like Plastic Surgery and Urology suggest that the "tail-end" of the waitlist requires targeted resource allocation rather than broad administrative processing.
