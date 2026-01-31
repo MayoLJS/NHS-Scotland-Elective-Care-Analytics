@@ -1,63 +1,46 @@
 # NHS Scotland Elective Care & Breach Trend Analysis
 
-## 📊 Project Overview
-This project focused on end-to-end data engineering and analysis of NHS Scotland elective care waiting times. I transformed raw clinical data into a structured, analysis-ready model to identify system pressure, normalize fragmented legacy codes, and track national recovery trends for KPI reporting.
+## Project Overview
+This project involved building an end-to-end SQL pipeline to analyze NHS Scotland’s elective care backlog. Using 41,000+ records from Public Health Scotland, I engineered a structured data model to identify systemic regional pressure, calculate clinical wait-time inequality, and track the velocity of national recovery.
 
 **Author:** Olumayowa Osimosu  
-**Environment:** Microsoft SQL Server 2022 (SSMS), SQL Server Integration Services (SSIS)  
-**Dataset:** Public Health Scotland Open Data (~41,000+ records)
+**Tech Stack:** SQL Server (T-SQL), SSIS, Excel  
 
 ---
 
-## 🛠 Data Engineering & Architecture
+## Data Engineering & Pipeline Logic
+The raw clinical data presented significant challenges with legacy identifiers and inconsistent schemas. I implemented a defensive engineering approach to ensure data integrity through the following workflow:
 
-### Schema Optimization
-Initial ETL phases exposed schema weaknesses where string truncation stopped the load. I rebuilt the staging design to protect data quality:
-* **Specialty to `VARCHAR(255)`**: Prevented loss of complex clinical descriptions.
-* **Wait Metrics to `FLOAT`**: Preserved decimal precision for 90th Percentile metrics, essential for statistical accuracy.
-
-### Defensive Deployment
-To ensure idempotent runs and reduce failed refresh cycles, I enforced a clean deployment pattern:
-* **Logic**: Used `ALTER DATABASE ... SET SINGLE_USER WITH ROLLBACK IMMEDIATE` to handle database locks during re-deployment.
+1. **Schema Hardening:** Rebuilt staging tables using `VARCHAR(255)` for specialties to prevent truncation and `FLOAT` for wait metrics to maintain decimal precision for statistical modeling.
+2. **Idempotent Deployment:** Enforced a clean environment reset pattern using `ALTER DATABASE ... SET SINGLE_USER` to handle active connection locks during the refresh cycle.
+3. **Normalization Layer:** Created a master view (`vw_Clean_Treatment_Waits`) to consolidate fragmented Health Board codes (e.g., merging NHS Lanarkshire identifiers) and standardize surgical specialty classifications.
 
 ---
 
-## ⚙️ Normalization Engine
-The raw dataset contained legacy identifiers that would have fragmented the report. I developed a reusable abstraction layer: `CREATE OR ALTER VIEW vw_Clean_Treatment_Waits`.
+## Key Analytical Findings
 
-* **Geographic Consolidation**: Merged legacy codes for **NHS Lanarkshire** (S08000022 & S08000032) and **NHS Fife** into single reporting entities.
-* **Clinical Grouping**: Standardized specialty codes (e.g., merging AH and C11 into **Trauma & Orthopaedics**) to prevent under-reporting of surgical volumes.
+### 1. Regional Breach Density
+Rather than focusing on raw volume, I modeled **Breach Density**—the percentage of the current "Ongoing" waitlist exceeding 52 weeks. This revealed that while urban boards have the largest lists, **NHS Grampian (18.2%)** and **NHS Lothian (17.85%)** face the highest proportional risk.
 
----
-
-## 📈 Advanced Analytical Framework
-I transitioned from basic descriptive counts to **Diagnostic KPIs** to better understand the "Experience of Delay" and operational risk.
-
-### 1. Breach Density (Identifying Systemic Risk)
-By isolating "Ongoing" waitlists, I calculated the percentage of the list exceeding the 52-week mark. This revealed that while volume is high in cities, **NHS Grampian (18.2%)** and **NHS Lothian (17.85%)** face the highest proportional pressure.
+### 2. Clinical Inequality (The Disparity Metric)
+To identify where complex cases are being left behind, I calculated the ratio between the 90th percentile and the median wait times. 
+* **Outliers:** Plastic Surgery (3.3x) and Haematology (3.2x) show the highest disparity, indicating that long-term patients in these fields wait over three times longer than the average patient on the same list.
 
 
 
-### 2. The Inequality Ratio (Median vs. 90th Percentile)
-I engineered an **Inequality Ratio** ($90^{th}\ Pctl\ /\ Median$) to identify specialties where the "long-tail" of patients is stagnant compared to the average.
-* **Plastic Surgery (3.3x)** and **Haematology (3.2x)** exhibit the highest inequality, signaling that complex cases are being disproportionately delayed compared to routine triage.
+### 3. Recovery Velocity
+Using SQL window functions (`LAG`), I quantified the month-over-month momentum of the national recovery effort.
+* **Momentum:** After a May 2025 peak of 203,655 breaches, the system reached a recovery velocity of **-9.87%** by November 2025, signaling an accelerating reduction in the total backlog.
 
 
 
 ---
 
-## ⏱ Recovery Velocity: Time-Series Analysis
-Using SQL Window Functions (`LAG`), I quantified the **Month-over-Month (MoM) Recovery Velocity** of the national backlog.
+## The Project in Plain English (Layman's Interpretation)
+Essentially, I built a digital "lens" to clean up messy, old healthcare data. This allows us to see exactly who is struggling most and how fast the system is healing. It proves that recovery isn't just about clearing the easy cases; it's about identifying the specific bottlenecks in regions like Grampian or specialties like Plastic Surgery that raw numbers usually hide.
 
-* **Crisis Peak**: May 2025 reached a record 203,655 breaches.
-* **Accelerating Momentum**: Recovery efficiency peaked in November 2025 with a **9.87% MoM reduction**, proving that the velocity of clearing the backlog is increasing significantly as recovery plans mature.
+## Data Quality & Operational Latency
+The analysis flagged a significant volume of "Not Specified" classifications. This points to **administrative latency**, where patients sit in triage limbo, likely masking the true wait times of specific surgical specialties. 
 
-
-
----
-
-## 🚩 Data Quality Flag: Operational Latency
-The analysis exposed that the largest breach group was **"Not Specified / Other"** (e.g., 18,831 in Glasgow). This highlights **Administrative Latency**: patients sitting in "Data Limbo" during triage, which likely masks higher true wait times in specific surgical specialties once processed.
-
-## 🏁 Conclusion
-The improved analysis proves that **volume does not equal risk**. While the national recovery is accelerating (31% total reduction), the high **Inequality Ratios** in specialties like Plastic Surgery and Urology suggest that the "tail-end" of the waitlist requires targeted resource allocation rather than broad administrative processing.
+## Conclusion
+By engineering a robust normalization layer, this project moved beyond simple reporting to provide diagnostic intelligence. The data shows that while the national recovery is gaining speed (31% total reduction), specific surgical pathways require targeted intervention to resolve extreme "long-tail" wait times.
